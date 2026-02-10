@@ -1,0 +1,32 @@
+{
+  "tests": [
+    {
+      "name": "Create new ticket",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "user_id": 1,
+        "subject": "Test ticket",
+        "message": "This is a test ticket message"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "ticket": {
+          "id": "number",
+          "subject": "string"
+        }
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get all tickets",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "tickets": "array"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
