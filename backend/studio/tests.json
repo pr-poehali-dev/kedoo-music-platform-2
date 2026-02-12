@@ -1,0 +1,31 @@
+{
+  "tests": [
+    {
+      "name": "Get promo releases",
+      "method": "GET",
+      "path": "/?type=promo",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "promos": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create promo release",
+      "method": "POST",
+      "path": "/?type=promo",
+      "body": {
+        "user_id": 1,
+        "upc": "123456789012",
+        "release_description": "Test description",
+        "key_track_name": "Test Track",
+        "artists": "Test Artist"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "promo": "object"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

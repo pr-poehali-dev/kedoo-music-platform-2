@@ -12,10 +12,10 @@ export default function LandingPage() {
             <h1 className="text-2xl font-heading font-bold">Radish</h1>
           </div>
           <nav className="hidden md:flex items-center gap-6">
-            <a href="#features" className="text-sm hover:text-primary transition-colors">О сервисе</a>
-            <a href="#contact" className="text-sm hover:text-primary transition-colors">Контакты</a>
-            <Link to="/auth">
-              <Button variant="default">Вход / Регистрация</Button>
+            <a href="#about" className="text-sm hover:text-primary transition-colors">О нас</a>
+            <Link to="/auth?tab=login" className="text-sm hover:text-primary transition-colors">Войти</Link>
+            <Link to="/auth?tab=register">
+              <Button variant="default">Регистрация</Button>
             </Link>
           </nav>
           <Link to="/auth" className="md:hidden">
@@ -45,6 +45,16 @@ export default function LandingPage() {
                 Узнать больше
               </Button>
             </div>
+          </div>
+        </section>
+
+        <section id="about" className="container mx-auto px-4 py-20 bg-accent/50">
+          <div className="max-w-3xl mx-auto text-center space-y-6">
+            <h3 className="text-3xl font-heading font-bold">О нас</h3>
+            <p className="text-lg text-muted-foreground leading-relaxed">
+              Мы дистрибутируем музыку <span className="text-primary font-semibold">бесплатно</span>, так как любим её и расширяем каталог ежедневно. 
+              Наша миссия — помочь каждому артисту достичь миллионов слушателей на всех крупнейших платформах без барьеров и комиссий.
+            </p>
           </div>
         </section>
 

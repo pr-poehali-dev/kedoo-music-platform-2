@@ -22,9 +22,18 @@ export default function DashboardLayout() {
   const navigation = [
     { name: 'Релизы', href: '/dashboard/releases', icon: 'Disc' },
     { name: 'Создать релиз', href: '/dashboard/releases/new', icon: 'Plus' },
+    { name: 'СмартСсылки', href: '/dashboard/smartlinks', icon: 'Link' },
+    { name: 'Студия', href: '/dashboard/studio', icon: 'Clapperboard' },
     { name: 'Тикеты', href: '/dashboard/tickets', icon: 'MessageSquare' },
     { name: 'Кошелек', href: '/dashboard/wallet', icon: 'Wallet' },
     { name: 'Статистика', href: '/dashboard/stats', icon: 'BarChart3' },
+  ];
+
+  const moderatorNavigation = [
+    { name: 'Модерация релизов', href: '/dashboard/moderation/releases', icon: 'CheckCircle' },
+    { name: 'Модерация смартлинков', href: '/dashboard/moderation/smartlinks', icon: 'LinkIcon' },
+    { name: 'Модерация студии', href: '/dashboard/moderation/studio', icon: 'Film' },
+    { name: 'Все тикеты', href: '/dashboard/tickets/all', icon: 'Inbox' },
   ];
 
   const handleLogout = () => {
@@ -34,25 +43,28 @@ export default function DashboardLayout() {
 
   const isActive = (href: string) => location.pathname === href;
 
-  const NavLinks = () => (
-    <>
-      {navigation.map((item) => (
-        <Link
-          key={item.name}
-          to={item.href}
-          onClick={() => setMobileOpen(false)}
-          className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-            isActive(item.href)
-              ? 'bg-primary text-primary-foreground'
-              : 'hover:bg-accent'
-          }`}
-        >
-          <Icon name={item.icon} className="h-5 w-5" />
-          <span>{item.name}</span>
-        </Link>
-      ))}
-    </>
-  );
+  const NavLinks = () => {
+    const links = user?.role === 'moderator' ? moderatorNavigation : navigation;
+    return (
+      <>
+        {links.map((item) => (
+          <Link
+            key={item.name}
+            to={item.href}
+            onClick={() => setMobileOpen(false)}
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+              isActive(item.href)
+                ? 'bg-primary text-primary-foreground'
+                : 'hover:bg-accent'
+            }`}
+          >
+            <Icon name={item.icon} className="h-5 w-5" />
+            <span>{item.name}</span>
+          </Link>
+        ))}
+      </>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">

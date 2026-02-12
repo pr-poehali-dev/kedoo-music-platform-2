@@ -34,7 +34,7 @@ def handler(event: dict, context) -> dict:
             status = params.get('status')
             
             if ticket_id:
-                cur.execute("SELECT * FROM tickets WHERE id = %s", (ticket_id,))
+                cur.execute("SELECT * FROM t_p13732906_kedoo_music_platform.tickets WHERE id = %s", (ticket_id,))
                 ticket = cur.fetchone()
                 
                 if not ticket:
@@ -52,7 +52,7 @@ def handler(event: dict, context) -> dict:
                     'isBase64Encoded': False
                 }
             
-            query = "SELECT * FROM tickets WHERE 1=1"
+            query = "SELECT t.*, u.username, u.email FROM t_p13732906_kedoo_music_platform.tickets t JOIN t_p13732906_kedoo_music_platform.users u ON t.user_id = u.id WHERE 1=1"
             query_params = []
             
             if user_id:
@@ -87,7 +87,7 @@ def handler(event: dict, context) -> dict:
                 }
             
             cur.execute("""
-                INSERT INTO tickets (user_id, subject, message, status)
+                INSERT INTO t_p13732906_kedoo_music_platform.tickets (user_id, subject, message, status)
                 VALUES (%s, %s, %s, %s)
                 RETURNING *
             """, (
@@ -132,7 +132,7 @@ def handler(event: dict, context) -> dict:
             
             if updates:
                 params.append(ticket_id)
-                query = f"UPDATE tickets SET {', '.join(updates)}, updated_at = CURRENT_TIMESTAMP WHERE id = %s RETURNING *"
+                query = f"UPDATE t_p13732906_kedoo_music_platform.tickets SET {', '.join(updates)}, updated_at = CURRENT_TIMESTAMP WHERE id = %s RETURNING *"
                 cur.execute(query, params)
                 ticket = dict(cur.fetchone())
                 conn.commit()

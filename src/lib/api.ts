@@ -2,6 +2,8 @@ const API_URLS = {
   auth: 'https://functions.poehali.dev/7255614f-e5e1-4591-b4cb-6d2f9ec79fe9',
   releases: 'https://functions.poehali.dev/ea735cc3-975b-4145-b478-0f741a8549a9',
   tickets: 'https://functions.poehali.dev/90e9cc69-808e-474f-9212-99358394ac20',
+  smartlinks: 'https://functions.poehali.dev/1b0240ee-799b-4d68-9df1-dfe1ee4dc606',
+  studio: 'https://functions.poehali.dev/6740f311-8715-475c-8c47-261ac5b85d75',
 };
 
 export interface User {
@@ -43,6 +45,67 @@ export interface Track {
   language?: string;
   lyrics?: string;
   track_order?: number;
+}
+
+export interface Smartlink {
+  id: number;
+  user_id: number;
+  release_name: string;
+  artists: string;
+  cover_url?: string;
+  upc?: string;
+  status: 'draft' | 'on_moderation' | 'accepted' | 'rejected';
+  rejection_reason?: string;
+  smartlink_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PromoRelease {
+  id: number;
+  user_id: number;
+  upc: string;
+  release_description?: string;
+  key_track_isrc?: string;
+  key_track_name?: string;
+  key_track_description?: string;
+  artists?: string;
+  smartlink_url?: string;
+  status: 'on_moderation' | 'accepted' | 'rejected';
+  rejection_reason?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Video {
+  id: number;
+  user_id: number;
+  video_url?: string;
+  video_name: string;
+  artist_name: string;
+  cover_url?: string;
+  status: 'on_moderation' | 'accepted' | 'rejected';
+  rejection_reason?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlatformAccount {
+  id: number;
+  user_id: number;
+  platform: 'yandex_music' | 'vk_music' | 'spotify' | 'apple_music' | 'youtube_music';
+  artist_description?: string;
+  latest_release_upc?: string;
+  upcoming_release_upc?: string;
+  artist_photo_url?: string;
+  artist_video_url?: string;
+  links?: Record<string, string>;
+  youtube_channel_url?: string;
+  youtube_artist_card_url?: string;
+  status: 'on_moderation' | 'accepted' | 'rejected';
+  rejection_reason?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Ticket {
@@ -156,5 +219,107 @@ export const ticketsAPI = {
       method: 'PUT',
       body: JSON.stringify({ ticket_id, status, moderator_response }),
     });
+  },
+};
+
+export const smartlinksAPI = {
+  getAll: async (user_id?: number, status?: string) => {
+    const params = new URLSearchParams();
+    if (user_id) params.append('user_id', user_id.toString());
+    if (status) params.append('status', status);
+    
+    return apiRequest(`${API_URLS.smartlinks}?${params.toString()}`);
+  },
+
+  getById: async (smartlink_id: number) => {
+    return apiRequest(`${API_URLS.smartlinks}?smartlink_id=${smartlink_id}`);
+  },
+
+  create: async (data: Partial<Smartlink>) => {
+    return apiRequest(API_URLS.smartlinks, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (smartlink_id: number, data: Partial<Smartlink>) => {
+    return apiRequest(API_URLS.smartlinks, {
+      method: 'PUT',
+      body: JSON.stringify({ smartlink_id, ...data }),
+    });
+  },
+};
+
+export const studioAPI = {
+  promo: {
+    getAll: async (user_id?: number, status?: string) => {
+      const params = new URLSearchParams({ type: 'promo' });
+      if (user_id) params.append('user_id', user_id.toString());
+      if (status) params.append('status', status);
+      
+      return apiRequest(`${API_URLS.studio}?${params.toString()}`);
+    },
+
+    create: async (data: Partial<PromoRelease>) => {
+      return apiRequest(`${API_URLS.studio}?type=promo`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    update: async (id: number, data: Partial<PromoRelease>) => {
+      return apiRequest(`${API_URLS.studio}?type=promo`, {
+        method: 'PUT',
+        body: JSON.stringify({ id, ...data }),
+      });
+    },
+  },
+
+  video: {
+    getAll: async (user_id?: number, status?: string) => {
+      const params = new URLSearchParams({ type: 'video' });
+      if (user_id) params.append('user_id', user_id.toString());
+      if (status) params.append('status', status);
+      
+      return apiRequest(`${API_URLS.studio}?${params.toString()}`);
+    },
+
+    create: async (data: Partial<Video>) => {
+      return apiRequest(`${API_URLS.studio}?type=video`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    update: async (id: number, data: Partial<Video>) => {
+      return apiRequest(`${API_URLS.studio}?type=video`, {
+        method: 'PUT',
+        body: JSON.stringify({ id, ...data }),
+      });
+    },
+  },
+
+  platform: {
+    getAll: async (user_id?: number, status?: string) => {
+      const params = new URLSearchParams({ type: 'platform' });
+      if (user_id) params.append('user_id', user_id.toString());
+      if (status) params.append('status', status);
+      
+      return apiRequest(`${API_URLS.studio}?${params.toString()}`);
+    },
+
+    create: async (data: Partial<PlatformAccount>) => {
+      return apiRequest(`${API_URLS.studio}?type=platform`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    update: async (id: number, data: Partial<PlatformAccount>) => {
+      return apiRequest(`${API_URLS.studio}?type=platform`, {
+        method: 'PUT',
+        body: JSON.stringify({ id, ...data }),
+      });
+    },
   },
 };
