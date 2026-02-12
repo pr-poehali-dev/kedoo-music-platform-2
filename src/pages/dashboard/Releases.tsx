@@ -91,8 +91,8 @@ export default function Releases() {
               <p className="text-sm text-destructive mb-2">Причина отклонения: {release.rejection_reason}</p>
             )}
             
-            <div className="flex gap-2 mt-4">
-              <Link to={`/dashboard/releases/${release.id}`}>
+            <div className="flex flex-wrap gap-2 mt-4">
+              <Link to={`/dashboard/releases/view/${release.id}`}>
                 <Button size="sm" variant="outline">
                   <Icon name="Eye" className="mr-2 h-4 w-4" />
                   Просмотр
@@ -100,7 +100,7 @@ export default function Releases() {
               </Link>
               
               {(release.status === 'draft' || release.status === 'rejected') && (
-                <Link to={`/dashboard/releases/${release.id}/edit`}>
+                <Link to={`/dashboard/releases/edit/${release.id}`}>
                   <Button size="sm" variant="outline">
                     <Icon name="Edit" className="mr-2 h-4 w-4" />
                     Редактировать

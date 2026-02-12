@@ -58,7 +58,7 @@ def handler(event: dict, context) -> dict:
             password_hash = hash_password(password)
             
             cur.execute(
-                "INSERT INTO users (email, username, password_hash) VALUES (%s, %s, %s) RETURNING id, email, username, role, theme",
+                "INSERT INTO t_p13732906_kedoo_music_platform.users (email, username, password_hash) VALUES (%s, %s, %s) RETURNING id, email, username, role, theme",
                 (email, username, password_hash)
             )
             user = dict(cur.fetchone())
@@ -86,7 +86,7 @@ def handler(event: dict, context) -> dict:
             password_hash = hash_password(password)
             
             cur.execute(
-                "SELECT id, email, username, role, theme FROM users WHERE email = %s AND password_hash = %s",
+                "SELECT id, email, username, role, theme FROM t_p13732906_kedoo_music_platform.users WHERE email = %s AND password_hash = %s",
                 (email, password_hash)
             )
             user = cur.fetchone()
@@ -132,7 +132,7 @@ def handler(event: dict, context) -> dict:
             
             if updates:
                 params.append(user_id)
-                query = f"UPDATE users SET {', '.join(updates)}, updated_at = CURRENT_TIMESTAMP WHERE id = %s RETURNING id, email, username, role, theme"
+                query = f"UPDATE t_p13732906_kedoo_music_platform.users SET {', '.join(updates)}, updated_at = CURRENT_TIMESTAMP WHERE id = %s RETURNING id, email, username, role, theme"
                 cur.execute(query, params)
                 user = dict(cur.fetchone())
                 conn.commit()
@@ -164,7 +164,7 @@ def handler(event: dict, context) -> dict:
                 }
             
             cur.execute(
-                "UPDATE users SET theme = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s RETURNING id, email, username, role, theme",
+                "UPDATE t_p13732906_kedoo_music_platform.users SET theme = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s RETURNING id, email, username, role, theme",
                 (theme, user_id)
             )
             user = dict(cur.fetchone())
