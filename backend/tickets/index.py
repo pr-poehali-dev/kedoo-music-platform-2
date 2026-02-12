@@ -52,7 +52,7 @@ def handler(event: dict, context) -> dict:
                     'isBase64Encoded': False
                 }
             
-            query = "SELECT t.*, u.username, u.email FROM t_p13732906_kedoo_music_platform.tickets t JOIN t_p13732906_kedoo_music_platform.users u ON t.user_id = u.id WHERE 1=1"
+            query = "SELECT t.*, u.username, u.email as user_email FROM t_p13732906_kedoo_music_platform.tickets t JOIN t_p13732906_kedoo_music_platform.users u ON t.user_id = u.id WHERE 1=1"
             query_params = []
             
             if user_id:
