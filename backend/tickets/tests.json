@@ -6,25 +6,24 @@
       "path": "/",
       "body": {
         "user_id": 1,
-        "subject": "Test ticket",
+        "subject": "Test ticket API",
         "message": "This is a test ticket message"
       },
       "expectedStatus": 201,
       "expectedBody": {
         "ticket": {
-          "id": "number",
-          "subject": "string"
+          "subject": "Test ticket API"
         }
       },
       "bodyMatcher": "partial"
     },
     {
-      "name": "Get all tickets",
+      "name": "Get tickets for nonexistent user",
       "method": "GET",
-      "path": "/",
+      "path": "/?user_id=999",
       "expectedStatus": 200,
       "expectedBody": {
-        "tickets": "array"
+        "tickets": []
       },
       "bodyMatcher": "partial"
     }

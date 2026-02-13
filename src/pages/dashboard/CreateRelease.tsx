@@ -25,6 +25,7 @@ export default function CreateRelease() {
     is_rerelease: false,
     upc: '',
     old_release_date: '',
+    release_date: '',
     cover_url: '',
   });
 
@@ -86,9 +87,18 @@ export default function CreateRelease() {
     setTracks(tracks.filter((_, i) => i !== index));
   };
 
+  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => setAlbumData({ ...albumData, cover_url: reader.result as string });
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (saveAsDraft = false) => {
     if (!user) return;
-    
+
     setIsLoading(true);
     try {
       const releaseData = {
@@ -98,6 +108,7 @@ export default function CreateRelease() {
         is_rerelease: albumData.is_rerelease,
         upc: albumData.upc || undefined,
         old_release_date: albumData.old_release_date || undefined,
+        release_date: albumData.release_date || undefined,
         cover_url: albumData.cover_url || undefined,
         status: saveAsDraft ? 'draft' : 'on_moderation',
         tracks: tracks.map((t, idx) => ({ ...t, track_order: idx + 1 })),
@@ -175,6 +186,17 @@ export default function CreateRelease() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="release_date">Дата релиза (предстоящая)</Label>
+              <Input
+                id="release_date"
+                type="date"
+                value={albumData.release_date}
+                onChange={(e) => setAlbumData({ ...albumData, release_date: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">Укажите желаемую дату выхода релиза</p>
+            </div>
+
+            <div className="space-y-2">
               <Label>Был ли релиз опубликован ранее?</Label>
               <RadioGroup
                 value={albumData.is_rerelease ? 'yes' : 'no'}
@@ -215,20 +237,16 @@ export default function CreateRelease() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="cover">Обложка (3000×3000 пикселей)</Label>
+              <Label htmlFor="cover">Обложка (3000x3000 пикселей)</Label>
               <Input
                 id="cover"
                 type="file"
                 accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onload = () => setAlbumData({ ...albumData, cover_url: reader.result as string });
-                    reader.readAsDataURL(file);
-                  }
-                }}
+                onChange={handleCoverUpload}
               />
+              {albumData.cover_url && (
+                <img src={albumData.cover_url} alt="Cover" className="w-32 h-32 rounded object-cover mt-2" />
+              )}
             </div>
 
             <div className="flex justify-end">
@@ -260,7 +278,7 @@ export default function CreateRelease() {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Название трека *</Label>
                       <Input
@@ -281,12 +299,7 @@ export default function CreateRelease() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Файл трека (.wav)</Label>
-                    <Input type="file" accept=".wav" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Код ISRC</Label>
                       <Input
@@ -314,7 +327,7 @@ export default function CreateRelease() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>ФИО музыкантов</Label>
                       <Input
@@ -427,23 +440,31 @@ export default function CreateRelease() {
             <CardDescription>Проверьте данные перед отправкой</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div>
-              <h3 className="font-semibold mb-2">Альбом</h3>
-              <p>Название: {albumData.album_name}</p>
-              <p>Артисты: {albumData.artists.filter(a => a).join(', ')}</p>
-              {albumData.is_rerelease && (
-                <>
-                  <p>UPC: {albumData.upc}</p>
-                  <p>Дата: {albumData.old_release_date}</p>
-                </>
+            <div className="flex gap-4">
+              {albumData.cover_url && (
+                <img src={albumData.cover_url} alt="Cover" className="w-32 h-32 rounded object-cover" />
               )}
+              <div>
+                <h3 className="font-semibold text-xl mb-1">{albumData.album_name}</h3>
+                <p className="text-muted-foreground">{albumData.artists.filter(a => a).join(', ')}</p>
+                {albumData.release_date && (
+                  <p className="text-sm text-muted-foreground mt-1">Дата релиза: {new Date(albumData.release_date).toLocaleDateString('ru-RU')}</p>
+                )}
+                {albumData.is_rerelease && (
+                  <>
+                    {albumData.upc && <p className="text-sm text-muted-foreground">UPC: {albumData.upc}</p>}
+                    {albumData.old_release_date && <p className="text-sm text-muted-foreground">Старая дата: {albumData.old_release_date}</p>}
+                  </>
+                )}
+              </div>
             </div>
 
             <div>
               <h3 className="font-semibold mb-2">Треки ({tracks.length})</h3>
               {tracks.map((track, idx) => (
-                <p key={idx}>
+                <p key={idx} className="text-sm">
                   {idx + 1}. {track.track_name} - {track.artists}
+                  {track.version && track.version !== 'Original' ? ` (${track.version})` : ''}
                 </p>
               ))}
             </div>

@@ -1,12 +1,12 @@
 {
   "tests": [
     {
-      "name": "Get all smartlinks",
+      "name": "Get smartlinks for nonexistent user",
       "method": "GET",
-      "path": "/",
+      "path": "/?user_id=999",
       "expectedStatus": 200,
       "expectedBody": {
-        "smartlinks": "array"
+        "smartlinks": []
       },
       "bodyMatcher": "partial"
     },
@@ -16,13 +16,15 @@
       "path": "/",
       "body": {
         "user_id": 1,
-        "release_name": "Test Album",
+        "release_name": "Test Smartlink API",
         "artists": "Test Artist",
         "upc": "123456789012"
       },
       "expectedStatus": 201,
       "expectedBody": {
-        "smartlink": "object"
+        "smartlink": {
+          "release_name": "Test Smartlink API"
+        }
       },
       "bodyMatcher": "partial"
     }

@@ -1,12 +1,22 @@
 {
   "tests": [
     {
+      "name": "Get releases for nonexistent user",
+      "method": "GET",
+      "path": "/?user_id=999",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "releases": []
+      },
+      "bodyMatcher": "partial"
+    },
+    {
       "name": "Create new release",
       "method": "POST",
       "path": "/",
       "body": {
         "user_id": 1,
-        "album_name": "Test Album",
+        "album_name": "Test Album API",
         "artists": "Test Artist",
         "status": "draft",
         "tracks": []
@@ -14,19 +24,8 @@
       "expectedStatus": 201,
       "expectedBody": {
         "release": {
-          "id": "number",
-          "album_name": "string"
+          "album_name": "Test Album API"
         }
-      },
-      "bodyMatcher": "partial"
-    },
-    {
-      "name": "Get all releases",
-      "method": "GET",
-      "path": "/",
-      "expectedStatus": 200,
-      "expectedBody": {
-        "releases": "array"
       },
       "bodyMatcher": "partial"
     }

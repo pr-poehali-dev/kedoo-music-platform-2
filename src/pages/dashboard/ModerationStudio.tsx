@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,19 +13,18 @@ export default function ModerationStudio() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('promo');
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const [promos, setPromos] = useState<PromoRelease[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [platforms, setPlatforms] = useState<PlatformAccount[]>([]);
 
   const [selectedItem, setSelectedItem] = useState<PromoRelease | Video | PlatformAccount | null>(null);
   const [itemType, setItemType] = useState<'promo' | 'video' | 'platform' | null>(null);
-  const [action, setAction] = useState<'accept' | 'reject' | null>(null);
+  const [action, setAction] = useState<'view' | 'accept' | 'reject' | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadData = async () => {
@@ -37,9 +35,9 @@ export default function ModerationStudio() {
         studioAPI.video.getAll(undefined, 'on_moderation'),
         studioAPI.platform.getAll(undefined, 'on_moderation'),
       ]);
-      setPromos(promosRes.promo_releases || []);
+      setPromos(promosRes.promos || []);
       setVideos(videosRes.videos || []);
-      setPlatforms(platformsRes.platform_accounts || []);
+      setPlatforms(platformsRes.platforms || []);
     } catch (error) {
       toast({
         title: 'Ошибка',
@@ -61,39 +59,24 @@ export default function ModerationStudio() {
       resetDialog();
       loadData();
     } catch (error) {
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось принять заявку',
-        variant: 'destructive',
-      });
+      toast({ title: 'Ошибка', description: 'Не удалось принять заявку', variant: 'destructive' });
     }
   };
 
   const handleReject = async () => {
     if (!selectedItem || !itemType || !rejectionReason) {
-      toast({
-        title: 'Ошибка',
-        description: 'Укажите причину отклонения',
-        variant: 'destructive',
-      });
+      toast({ title: 'Ошибка', description: 'Укажите причину отклонения', variant: 'destructive' });
       return;
     }
 
     try {
       const api = itemType === 'promo' ? studioAPI.promo : itemType === 'video' ? studioAPI.video : studioAPI.platform;
-      await api.update(selectedItem.id, {
-        status: 'rejected',
-        rejection_reason: rejectionReason,
-      });
+      await api.update(selectedItem.id, { status: 'rejected', rejection_reason: rejectionReason });
       toast({ title: 'Успешно', description: 'Заявка отклонена' });
       resetDialog();
       loadData();
     } catch (error) {
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось отклонить заявку',
-        variant: 'destructive',
-      });
+      toast({ title: 'Ошибка', description: 'Не удалось отклонить заявку', variant: 'destructive' });
     }
   };
 
@@ -104,47 +87,64 @@ export default function ModerationStudio() {
     setRejectionReason('');
   };
 
+  const openItem = (item: PromoRelease | Video | PlatformAccount, type: 'promo' | 'video' | 'platform', act: 'view' | 'accept' | 'reject') => {
+    setSelectedItem(item);
+    setItemType(type);
+    setAction(act);
+  };
+
+  const downloadFile = (url: string, name: string) => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const PromoCard = ({ promo }: { promo: PromoRelease }) => (
     <Card>
       <CardContent className="p-6">
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+        <div className="space-y-3">
+          <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-lg break-words">{promo.release_name || 'Без названия'}</h3>
+              <h3 className="font-semibold text-lg">Промо-релиз</h3>
               <p className="text-sm text-muted-foreground">UPC: {promo.upc}</p>
-              {promo.key_track_isrc && <p className="text-sm text-muted-foreground">ISRC: {promo.key_track_isrc}</p>}
+              {promo.artists && <p className="text-sm text-muted-foreground">Артист: {promo.artists}</p>}
+              {promo.key_track_name && <p className="text-sm text-muted-foreground">Ключевой трек: {promo.key_track_name}</p>}
             </div>
             <Badge>На модерации</Badge>
           </div>
-          
-          {promo.vk_description && (
-            <div>
-              <p className="text-sm font-medium">Описание для VK:</p>
-              <p className="text-sm text-muted-foreground mt-1 break-words">{promo.vk_description}</p>
-            </div>
-          )}
-          
-          {promo.youtube_description && (
-            <div>
-              <p className="text-sm font-medium">Описание для YouTube:</p>
-              <p className="text-sm text-muted-foreground mt-1 break-words">{promo.youtube_description}</p>
+
+          {promo.release_description && (
+            <div className="bg-muted p-3 rounded text-sm">
+              <p className="font-medium text-xs text-muted-foreground mb-1">Описание релиза:</p>
+              <p className="whitespace-pre-wrap">{promo.release_description}</p>
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button onClick={() => {
-              setSelectedItem(promo);
-              setItemType('promo');
-              setAction('accept');
-            }} className="w-full sm:w-auto">
+          {promo.key_track_description && (
+            <div className="bg-muted p-3 rounded text-sm">
+              <p className="font-medium text-xs text-muted-foreground mb-1">Описание ключевого трека:</p>
+              <p className="whitespace-pre-wrap">{promo.key_track_description}</p>
+            </div>
+          )}
+
+          {promo.key_track_isrc && <p className="text-xs text-muted-foreground">ISRC: {promo.key_track_isrc}</p>}
+          {promo.smartlink_url && (
+            <a href={promo.smartlink_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+              Smartlink: {promo.smartlink_url}
+            </a>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => openItem(promo, 'promo', 'accept')}>
               <Icon name="Check" className="mr-2 h-4 w-4" />
               Принять
             </Button>
-            <Button variant="destructive" onClick={() => {
-              setSelectedItem(promo);
-              setItemType('promo');
-              setAction('reject');
-            }} className="w-full sm:w-auto">
+            <Button size="sm" variant="destructive" onClick={() => openItem(promo, 'promo', 'reject')}>
               <Icon name="X" className="mr-2 h-4 w-4" />
               Отклонить
             </Button>
@@ -157,29 +157,40 @@ export default function ModerationStudio() {
   const VideoCard = ({ video }: { video: Video }) => (
     <Card>
       <CardContent className="p-6">
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+        <div className="space-y-3">
+          <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-lg break-words">{video.name}</h3>
-              <p className="text-muted-foreground break-words">{video.artist}</p>
+              <h3 className="font-semibold text-lg">{video.video_name}</h3>
+              <p className="text-muted-foreground">{video.artist_name}</p>
             </div>
             <Badge>На модерации</Badge>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button onClick={() => {
-              setSelectedItem(video);
-              setItemType('video');
-              setAction('accept');
-            }} className="w-full sm:w-auto">
+          {video.cover_url && (
+            <img src={video.cover_url} alt={video.video_name} className="w-32 h-32 rounded object-cover" />
+          )}
+
+          {video.video_url && (
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Видео:</p>
+              <a href={video.video_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all">
+                {video.video_url}
+              </a>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            {video.video_url && (
+              <Button size="sm" variant="outline" onClick={() => downloadFile(video.video_url!, `${video.video_name}`)}>
+                <Icon name="Download" className="mr-2 h-4 w-4" />
+                Скачать видео
+              </Button>
+            )}
+            <Button size="sm" onClick={() => openItem(video, 'video', 'accept')}>
               <Icon name="Check" className="mr-2 h-4 w-4" />
               Принять
             </Button>
-            <Button variant="destructive" onClick={() => {
-              setSelectedItem(video);
-              setItemType('video');
-              setAction('reject');
-            }} className="w-full sm:w-auto">
+            <Button size="sm" variant="destructive" onClick={() => openItem(video, 'video', 'reject')}>
               <Icon name="X" className="mr-2 h-4 w-4" />
               Отклонить
             </Button>
@@ -192,42 +203,69 @@ export default function ModerationStudio() {
   const PlatformCard = ({ platform }: { platform: PlatformAccount }) => (
     <Card>
       <CardContent className="p-6">
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+        <div className="space-y-3">
+          <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-lg break-words">{platform.platform_name}</h3>
-              <p className="text-sm text-muted-foreground break-words">Артист: {platform.artist_name}</p>
+              <h3 className="font-semibold text-lg">{platform.platform}</h3>
+              {platform.artist_description && <p className="text-sm text-muted-foreground">{platform.artist_description}</p>}
             </div>
             <Badge>На модерации</Badge>
           </div>
 
-          {platform.links && typeof platform.links === 'object' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+            {platform.latest_release_upc && (
+              <p><span className="text-muted-foreground">Последний UPC:</span> {platform.latest_release_upc}</p>
+            )}
+            {platform.upcoming_release_upc && (
+              <p><span className="text-muted-foreground">Предстоящий UPC:</span> {platform.upcoming_release_upc}</p>
+            )}
+            {platform.youtube_channel_url && (
+              <p className="sm:col-span-2 break-all">
+                <span className="text-muted-foreground">YouTube канал:</span>{' '}
+                <a href={platform.youtube_channel_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  {platform.youtube_channel_url}
+                </a>
+              </p>
+            )}
+            {platform.youtube_artist_card_url && (
+              <p className="sm:col-span-2 break-all">
+                <span className="text-muted-foreground">Карточка артиста:</span>{' '}
+                <a href={platform.youtube_artist_card_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  {platform.youtube_artist_card_url}
+                </a>
+              </p>
+            )}
+          </div>
+
+          {platform.links && typeof platform.links === 'object' && Object.keys(platform.links).length > 0 && (
             <div className="space-y-1">
               <p className="text-sm font-medium">Ссылки:</p>
               {Object.entries(platform.links).map(([key, value]) => (
                 value && (
-                  <p key={key} className="text-sm text-muted-foreground break-all">
-                    {key}: {value as string}
+                  <p key={key} className="text-sm break-all">
+                    <span className="text-muted-foreground">{key}:</span>{' '}
+                    <a href={value as string} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      {value as string}
+                    </a>
                   </p>
                 )
               ))}
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button onClick={() => {
-              setSelectedItem(platform);
-              setItemType('platform');
-              setAction('accept');
-            }} className="w-full sm:w-auto">
+          {platform.artist_photo_url && (
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Фото артиста:</p>
+              <img src={platform.artist_photo_url} alt="Artist" className="w-24 h-24 rounded object-cover" />
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => openItem(platform, 'platform', 'accept')}>
               <Icon name="Check" className="mr-2 h-4 w-4" />
               Принять
             </Button>
-            <Button variant="destructive" onClick={() => {
-              setSelectedItem(platform);
-              setItemType('platform');
-              setAction('reject');
-            }} className="w-full sm:w-auto">
+            <Button size="sm" variant="destructive" onClick={() => openItem(platform, 'platform', 'reject')}>
               <Icon name="X" className="mr-2 h-4 w-4" />
               Отклонить
             </Button>
@@ -250,20 +288,15 @@ export default function ModerationStudio() {
       <h1 className="text-3xl font-heading font-bold mb-6">Модерация студии</h1>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList>
           <TabsTrigger value="promo">Промо ({promos.length})</TabsTrigger>
           <TabsTrigger value="video">Видео ({videos.length})</TabsTrigger>
-          <TabsTrigger value="platform">Платформы ({platforms.length})</TabsTrigger>
+          <TabsTrigger value="platform">Кабинеты ({platforms.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="promo" className="space-y-4 mt-6">
           {promos.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Icon name="Megaphone" className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Нет заявок на промо</p>
-              </CardContent>
-            </Card>
+            <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">Нет промо на модерации</p></CardContent></Card>
           ) : (
             promos.map((promo) => <PromoCard key={promo.id} promo={promo} />)
           )}
@@ -271,12 +304,7 @@ export default function ModerationStudio() {
 
         <TabsContent value="video" className="space-y-4 mt-6">
           {videos.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Icon name="Video" className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Нет видео на модерации</p>
-              </CardContent>
-            </Card>
+            <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">Нет видео на модерации</p></CardContent></Card>
           ) : (
             videos.map((video) => <VideoCard key={video.id} video={video} />)
           )}
@@ -284,12 +312,7 @@ export default function ModerationStudio() {
 
         <TabsContent value="platform" className="space-y-4 mt-6">
           {platforms.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Icon name="Globe" className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Нет аккаунтов на модерации</p>
-              </CardContent>
-            </Card>
+            <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">Нет кабинетов на модерации</p></CardContent></Card>
           ) : (
             platforms.map((platform) => <PlatformCard key={platform.id} platform={platform} />)
           )}
@@ -300,17 +323,11 @@ export default function ModerationStudio() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Принять заявку</DialogTitle>
-            <DialogDescription>
-              Вы уверены, что хотите принять эту заявку?
-            </DialogDescription>
+            <DialogDescription>Подтвердите принятие</DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button onClick={handleAccept} className="w-full sm:w-auto">
-              Принять
-            </Button>
-            <Button variant="outline" onClick={resetDialog} className="w-full sm:w-auto">
-              Отмена
-            </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleAccept} className="flex-1">Принять</Button>
+            <Button variant="outline" onClick={resetDialog} className="flex-1">Отмена</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -319,29 +336,18 @@ export default function ModerationStudio() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Отклонить заявку</DialogTitle>
-            <DialogDescription>
-              Укажите причину отклонения
-            </DialogDescription>
+            <DialogDescription>Укажите причину</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="rejection_reason">Причина отклонения *</Label>
-              <Textarea
-                id="rejection_reason"
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Опишите причину..."
-                rows={4}
-                required
-              />
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button variant="destructive" onClick={handleReject} className="w-full sm:w-auto">
-                Отклонить
-              </Button>
-              <Button variant="outline" onClick={resetDialog} className="w-full sm:w-auto">
-                Отмена
-              </Button>
+            <Textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="Причина отклонения..."
+              rows={4}
+            />
+            <div className="flex gap-2">
+              <Button variant="destructive" onClick={handleReject} className="flex-1">Отклонить</Button>
+              <Button variant="outline" onClick={resetDialog} className="flex-1">Отмена</Button>
             </div>
           </div>
         </DialogContent>

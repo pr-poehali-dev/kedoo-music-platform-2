@@ -17,10 +17,10 @@ export default function ViewRelease() {
   useEffect(() => {
     const loadRelease = async () => {
       if (!id) return;
-      
+
       try {
-        const data = await releasesAPI.getById(parseInt(id));
-        setRelease(data);
+        const response = await releasesAPI.getById(parseInt(id));
+        setRelease(response.release || response);
       } catch (error) {
         toast({
           title: 'Ошибка',
@@ -69,6 +69,8 @@ export default function ViewRelease() {
     );
   }
 
+  const tracks = Array.isArray(release.tracks) ? release.tracks : [];
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -84,7 +86,7 @@ export default function ViewRelease() {
         </div>
         <div className="flex items-center gap-2">
           {getStatusBadge(release.status)}
-          {release.status === 'draft' && (
+          {(release.status === 'draft' || release.status === 'rejected') && (
             <Link to={`/dashboard/releases/edit/${release.id}`}>
               <Button size="sm">
                 <Icon name="Edit" className="mr-2 h-4 w-4" />
@@ -120,25 +122,29 @@ export default function ViewRelease() {
               <p className="text-sm text-muted-foreground">Артисты</p>
               <p className="font-medium">{release.artists}</p>
             </div>
+            {release.release_date && (
+              <div>
+                <p className="text-sm text-muted-foreground">Дата релиза</p>
+                <p className="font-medium">{new Date(release.release_date).toLocaleDateString('ru-RU')}</p>
+              </div>
+            )}
+            {release.upc && (
+              <div>
+                <p className="text-sm text-muted-foreground">UPC</p>
+                <p className="font-medium">{release.upc}</p>
+              </div>
+            )}
             {release.is_rerelease && (
-              <>
-                <div>
-                  <p className="text-sm text-muted-foreground">Переиздание</p>
-                  <p className="font-medium">Да</p>
-                </div>
-                {release.upc && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">UPC</p>
-                    <p className="font-medium">{release.upc}</p>
-                  </div>
-                )}
-                {release.old_release_date && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Старая дата релиза</p>
-                    <p className="font-medium">{new Date(release.old_release_date).toLocaleDateString('ru-RU')}</p>
-                  </div>
-                )}
-              </>
+              <div>
+                <p className="text-sm text-muted-foreground">Переиздание</p>
+                <p className="font-medium">Да</p>
+              </div>
+            )}
+            {release.old_release_date && (
+              <div>
+                <p className="text-sm text-muted-foreground">Старая дата релиза</p>
+                <p className="font-medium">{new Date(release.old_release_date).toLocaleDateString('ru-RU')}</p>
+              </div>
             )}
             {release.rejection_reason && (
               <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
@@ -152,13 +158,13 @@ export default function ViewRelease() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Треклист ({release.tracks?.length || 0})</CardTitle>
+          <CardTitle>Треклист ({tracks.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          {release.tracks && release.tracks.length > 0 ? (
+          {tracks.length > 0 ? (
             <div className="space-y-4">
-              {release.tracks.map((track, idx) => (
-                <Card key={track.id} className="p-4">
+              {tracks.map((track, idx) => (
+                <Card key={track.id || idx} className="p-4">
                   <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                     <div className="flex-shrink-0">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -173,44 +179,48 @@ export default function ViewRelease() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                         {track.version && track.version !== 'Original' && (
                           <div>
-                            <span className="text-muted-foreground">Версия:</span> <Badge variant="outline" className="ml-1">{track.version}</Badge>
+                            <span className="text-muted-foreground">Версия:</span>{' '}
+                            <Badge variant="outline" className="ml-1">{track.version}</Badge>
                           </div>
                         )}
                         {track.isrc && (
                           <div>
-                            <span className="text-muted-foreground">ISRC:</span> <span className="font-mono ml-1">{track.isrc}</span>
+                            <span className="text-muted-foreground">ISRC:</span>{' '}
+                            <span className="font-mono ml-1">{track.isrc}</span>
                           </div>
                         )}
                         {track.musicians && (
                           <div className="sm:col-span-2">
-                            <span className="text-muted-foreground">Музыканты:</span> <span className="ml-1">{track.musicians}</span>
+                            <span className="text-muted-foreground">Музыканты:</span>{' '}
+                            <span className="ml-1">{track.musicians}</span>
                           </div>
                         )}
                         {track.lyricists && (
                           <div className="sm:col-span-2">
-                            <span className="text-muted-foreground">Авторы текста:</span> <span className="ml-1">{track.lyricists}</span>
+                            <span className="text-muted-foreground">Авторы текста:</span>{' '}
+                            <span className="ml-1">{track.lyricists}</span>
                           </div>
                         )}
                         {track.tiktok_moment && (
                           <div>
-                            <span className="text-muted-foreground">TikTok момент:</span> <span className="ml-1">{track.tiktok_moment}</span>
+                            <span className="text-muted-foreground">TikTok момент:</span>{' '}
+                            <span className="ml-1">{track.tiktok_moment}</span>
                           </div>
                         )}
                         {track.has_explicit && (
-                          <div>
-                            <Badge variant="destructive">Explicit</Badge>
-                          </div>
+                          <div><Badge variant="destructive">Explicit</Badge></div>
                         )}
                         {track.has_lyrics && (
                           <div className="sm:col-span-2">
-                            <span className="text-muted-foreground">Язык:</span> <span className="ml-1">{track.language || 'Не указан'}</span>
+                            <span className="text-muted-foreground">Язык:</span>{' '}
+                            <span className="ml-1">{track.language || 'Не указан'}</span>
                           </div>
                         )}
                       </div>
-                      {track.lyrics && (
+                      {track.has_lyrics && track.lyrics && (
                         <details className="mt-2">
-                          <summary className="cursor-pointer text-sm text-primary hover:underline">Показать текст</summary>
-                          <div className="mt-2 p-3 bg-muted rounded-lg text-sm whitespace-pre-wrap">{track.lyrics}</div>
+                          <summary className="text-sm text-muted-foreground cursor-pointer">Показать текст</summary>
+                          <p className="mt-2 text-sm whitespace-pre-wrap bg-muted p-3 rounded">{track.lyrics}</p>
                         </details>
                       )}
                     </div>
@@ -219,7 +229,7 @@ export default function ViewRelease() {
               ))}
             </div>
           ) : (
-            <p className="text-center text-muted-foreground py-8">Треки не добавлены</p>
+            <p className="text-muted-foreground text-center py-8">Треки не добавлены</p>
           )}
         </CardContent>
       </Card>

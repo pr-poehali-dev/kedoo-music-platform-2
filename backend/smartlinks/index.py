@@ -28,9 +28,10 @@ def handler(event: dict, context) -> dict:
     
     try:
         if method == 'GET':
-            user_id = event.get('queryStringParameters', {}).get('user_id')
-            status = event.get('queryStringParameters', {}).get('status')
-            smartlink_id = event.get('queryStringParameters', {}).get('smartlink_id')
+            qparams = event.get('queryStringParameters') or {}
+            user_id = qparams.get('user_id')
+            status = qparams.get('status')
+            smartlink_id = qparams.get('smartlink_id')
             
             if smartlink_id:
                 cur.execute(
@@ -45,12 +46,13 @@ def handler(event: dict, context) -> dict:
                     'isBase64Encoded': False
                 }
             
-            query = "SELECT * FROM t_p13732906_kedoo_music_platform.smartlinks WHERE 1=1"
+            base_fields = "id, user_id, release_name, artists, upc, status, rejection_reason, smartlink_url, created_at, updated_at"
+            query = f"SELECT {base_fields} FROM t_p13732906_kedoo_music_platform.smartlinks WHERE 1=1"
             params = []
             
             if user_id:
-                query += " AND user_id = %s"
-                params.append(user_id)
+                query = f"SELECT {base_fields} FROM t_p13732906_kedoo_music_platform.smartlinks WHERE user_id = %s"
+                params = [user_id]
             
             if status:
                 query += " AND status = %s"
@@ -83,12 +85,13 @@ def handler(event: dict, context) -> dict:
                     'isBase64Encoded': False
                 }
             
+            status = body.get('status', 'on_moderation')
             cur.execute(
                 """INSERT INTO t_p13732906_kedoo_music_platform.smartlinks 
                 (user_id, release_name, artists, cover_url, upc, status) 
-                VALUES (%s, %s, %s, %s, %s, 'draft') 
+                VALUES (%s, %s, %s, %s, %s, %s) 
                 RETURNING id, user_id, release_name, artists, cover_url, upc, status, created_at, updated_at""",
-                (user_id, release_name, artists, cover_url, upc)
+                (user_id, release_name, artists, cover_url, upc, status)
             )
             smartlink = dict(cur.fetchone())
             conn.commit()

@@ -27,7 +27,7 @@ def handler(event: dict, context) -> dict:
     cur = conn.cursor(cursor_factory=RealDictCursor)
     
     try:
-        params = event.get('queryStringParameters', {})
+        params = event.get('queryStringParameters') or {}
         entity_type = params.get('type')
         
         if method == 'GET':

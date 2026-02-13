@@ -25,6 +25,7 @@ export default function EditRelease() {
     is_rerelease: false,
     upc: '',
     old_release_date: '',
+    release_date: '',
     cover_url: '',
   });
 
@@ -33,14 +34,15 @@ export default function EditRelease() {
   useEffect(() => {
     const loadRelease = async () => {
       if (!id) return;
-      
+
       try {
-        const data: Release = await releasesAPI.getById(parseInt(id));
-        
-        if (data.status !== 'draft') {
+        const response = await releasesAPI.getById(parseInt(id));
+        const data: Release = response.release || response;
+
+        if (data.status !== 'draft' && data.status !== 'rejected') {
           toast({
             title: 'Ошибка',
-            description: 'Можно редактировать только черновики',
+            description: 'Можно редактировать только черновики и отклонённые релизы',
             variant: 'destructive',
           });
           navigate('/dashboard/releases');
@@ -49,10 +51,11 @@ export default function EditRelease() {
 
         setAlbumData({
           album_name: data.album_name,
-          artists: data.artists.split(', '),
-          is_rerelease: data.is_rerelease,
+          artists: data.artists ? data.artists.split(', ') : [''],
+          is_rerelease: data.is_rerelease || false,
           upc: data.upc || '',
           old_release_date: data.old_release_date || '',
+          release_date: data.release_date || '',
           cover_url: data.cover_url || '',
         });
 
@@ -130,9 +133,18 @@ export default function EditRelease() {
     setTracks(tracks.filter((_, i) => i !== index));
   };
 
+  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => setAlbumData({ ...albumData, cover_url: reader.result as string });
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (saveAsDraft = false) => {
     if (!id) return;
-    
+
     setIsSaving(true);
     try {
       const releaseData = {
@@ -141,6 +153,7 @@ export default function EditRelease() {
         is_rerelease: albumData.is_rerelease,
         upc: albumData.upc || undefined,
         old_release_date: albumData.old_release_date || undefined,
+        release_date: albumData.release_date || undefined,
         cover_url: albumData.cover_url || undefined,
         status: saveAsDraft ? 'draft' : 'on_moderation',
         tracks: tracks.map((t, idx) => ({ ...t, track_order: idx + 1 })),
@@ -226,18 +239,29 @@ export default function EditRelease() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="release_date">Дата релиза (предстоящая)</Label>
+              <Input
+                id="release_date"
+                type="date"
+                value={albumData.release_date}
+                onChange={(e) => setAlbumData({ ...albumData, release_date: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">Укажите желаемую дату выхода релиза</p>
+            </div>
+
+            <div className="space-y-2">
               <Label>Был ли релиз опубликован ранее?</Label>
               <RadioGroup
                 value={albumData.is_rerelease ? 'yes' : 'no'}
                 onValueChange={(v) => setAlbumData({ ...albumData, is_rerelease: v === 'yes' })}
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="no" id="no" />
-                  <Label htmlFor="no">Нет</Label>
+                  <RadioGroupItem value="no" id="edit-no" />
+                  <Label htmlFor="edit-no">Нет</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="yes" id="yes" />
-                  <Label htmlFor="yes">Да</Label>
+                  <RadioGroupItem value="yes" id="edit-yes" />
+                  <Label htmlFor="edit-yes">Да</Label>
                 </div>
               </RadioGroup>
             </div>
@@ -266,20 +290,11 @@ export default function EditRelease() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="cover">Обложка (3000×3000 пикселей)</Label>
-              <Input
-                id="cover"
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onload = () => setAlbumData({ ...albumData, cover_url: reader.result as string });
-                    reader.readAsDataURL(file);
-                  }
-                }}
-              />
+              <Label htmlFor="cover">Обложка (3000x3000 пикселей)</Label>
+              <Input id="cover" type="file" accept="image/*" onChange={handleCoverUpload} />
+              {albumData.cover_url && (
+                <img src={albumData.cover_url} alt="Cover" className="w-32 h-32 rounded object-cover mt-2" />
+              )}
             </div>
 
             <div className="flex justify-end">
@@ -296,7 +311,7 @@ export default function EditRelease() {
         <Card>
           <CardHeader>
             <CardTitle>Треклист</CardTitle>
-            <CardDescription>Редактируйте треки в релизе</CardDescription>
+            <CardDescription>Добавьте треки в релиз</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {tracks.map((track, idx) => (
@@ -344,9 +359,7 @@ export default function EditRelease() {
                     <div className="space-y-2">
                       <Label>Версия трека</Label>
                       <Select value={track.version} onValueChange={(v) => updateTrack(idx, 'version', v)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Original">Original</SelectItem>
                           <SelectItem value="Cover">Cover</SelectItem>
@@ -395,12 +408,12 @@ export default function EditRelease() {
                       onValueChange={(v) => updateTrack(idx, 'has_explicit', v === 'yes')}
                     >
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="no" id={`explicit-no-${idx}`} />
-                        <Label htmlFor={`explicit-no-${idx}`}>Нет</Label>
+                        <RadioGroupItem value="no" id={`e-explicit-no-${idx}`} />
+                        <Label htmlFor={`e-explicit-no-${idx}`}>Нет</Label>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="yes" id={`explicit-yes-${idx}`} />
-                        <Label htmlFor={`explicit-yes-${idx}`}>Да</Label>
+                        <RadioGroupItem value="yes" id={`e-explicit-yes-${idx}`} />
+                        <Label htmlFor={`e-explicit-yes-${idx}`}>Да</Label>
                       </div>
                     </RadioGroup>
                   </div>
@@ -412,12 +425,12 @@ export default function EditRelease() {
                       onValueChange={(v) => updateTrack(idx, 'has_lyrics', v === 'yes')}
                     >
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="no" id={`lyrics-no-${idx}`} />
-                        <Label htmlFor={`lyrics-no-${idx}`}>Нет</Label>
+                        <RadioGroupItem value="no" id={`e-lyrics-no-${idx}`} />
+                        <Label htmlFor={`e-lyrics-no-${idx}`}>Нет</Label>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="yes" id={`lyrics-yes-${idx}`} />
-                        <Label htmlFor={`lyrics-yes-${idx}`}>Да</Label>
+                        <RadioGroupItem value="yes" id={`e-lyrics-yes-${idx}`} />
+                        <Label htmlFor={`e-lyrics-yes-${idx}`}>Да</Label>
                       </div>
                     </RadioGroup>
                   </div>
@@ -452,7 +465,7 @@ export default function EditRelease() {
               Добавить трек
             </Button>
 
-            <div className="flex flex-col sm:flex-row justify-between gap-2">
+            <div className="flex justify-between">
               <Button variant="outline" onClick={() => setStep(1)}>
                 <Icon name="ChevronLeft" className="mr-2 h-4 w-4" />
                 Назад
@@ -470,36 +483,37 @@ export default function EditRelease() {
         <Card>
           <CardHeader>
             <CardTitle>Предпросмотр</CardTitle>
-            <CardDescription>Проверьте данные перед сохранением</CardDescription>
+            <CardDescription>Проверьте данные перед отправкой</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div>
-              <h3 className="font-semibold mb-2">Альбом</h3>
-              <p>Название: {albumData.album_name}</p>
-              <p>Артисты: {albumData.artists.filter(a => a).join(', ')}</p>
-              {albumData.is_rerelease && (
-                <>
-                  <p>UPC: {albumData.upc}</p>
-                  <p>Дата: {albumData.old_release_date}</p>
-                </>
+            <div className="flex gap-4">
+              {albumData.cover_url && (
+                <img src={albumData.cover_url} alt="Cover" className="w-32 h-32 rounded object-cover" />
               )}
+              <div>
+                <h3 className="font-semibold text-xl mb-1">{albumData.album_name}</h3>
+                <p className="text-muted-foreground">{albumData.artists.filter(a => a).join(', ')}</p>
+                {albumData.release_date && (
+                  <p className="text-sm text-muted-foreground mt-1">Дата релиза: {new Date(albumData.release_date).toLocaleDateString('ru-RU')}</p>
+                )}
+              </div>
             </div>
 
             <div>
               <h3 className="font-semibold mb-2">Треки ({tracks.length})</h3>
               {tracks.map((track, idx) => (
-                <p key={idx}>
+                <p key={idx} className="text-sm">
                   {idx + 1}. {track.track_name} - {track.artists}
                 </p>
               ))}
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-between gap-2">
+            <div className="flex justify-between gap-4">
               <Button variant="outline" onClick={() => setStep(2)}>
                 <Icon name="ChevronLeft" className="mr-2 h-4 w-4" />
                 Назад
               </Button>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex gap-2">
                 <Button variant="outline" onClick={() => handleSubmit(true)} disabled={isSaving}>
                   Сохранить черновик
                 </Button>

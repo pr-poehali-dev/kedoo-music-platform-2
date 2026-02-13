@@ -22,6 +22,7 @@ export interface Release {
   cover_url?: string;
   upc?: string;
   old_release_date?: string;
+  release_date?: string;
   is_rerelease: boolean;
   status: 'draft' | 'on_moderation' | 'accepted' | 'rejected';
   rejection_reason?: string;
@@ -115,6 +116,9 @@ export interface Ticket {
   message: string;
   status: 'open' | 'closed';
   moderator_response?: string;
+  username?: string;
+  user_email?: string;
+  email?: string;
   created_at: string;
   updated_at: string;
 }
@@ -192,6 +196,12 @@ export const releasesAPI = {
       body: JSON.stringify({ release_id, ...releaseData }),
     });
   },
+
+  delete: async (release_id: number) => {
+    return apiRequest(`${API_URLS.releases}?release_id=${release_id}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 export const ticketsAPI = {
@@ -214,10 +224,10 @@ export const ticketsAPI = {
     });
   },
 
-  update: async (ticket_id: number, status?: string, moderator_response?: string) => {
+  update: async (ticket_id: number, data: { status?: string; moderator_response?: string }) => {
     return apiRequest(API_URLS.tickets, {
       method: 'PUT',
-      body: JSON.stringify({ ticket_id, status, moderator_response }),
+      body: JSON.stringify({ ticket_id, ...data }),
     });
   },
 };

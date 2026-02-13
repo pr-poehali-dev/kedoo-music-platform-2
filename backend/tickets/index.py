@@ -28,7 +28,7 @@ def handler(event: dict, context) -> dict:
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
         if method == 'GET':
-            params = event.get('queryStringParameters', {})
+            params = event.get('queryStringParameters') or {}
             user_id = params.get('user_id')
             ticket_id = params.get('ticket_id')
             status = params.get('status')

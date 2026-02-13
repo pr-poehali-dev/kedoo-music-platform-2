@@ -1,12 +1,12 @@
 {
   "tests": [
     {
-      "name": "Get promo releases",
+      "name": "Get promo releases for nonexistent user",
       "method": "GET",
-      "path": "/?type=promo",
+      "path": "/?type=promo&user_id=999",
       "expectedStatus": 200,
       "expectedBody": {
-        "promos": "array"
+        "promos": []
       },
       "bodyMatcher": "partial"
     },
@@ -23,7 +23,9 @@
       },
       "expectedStatus": 201,
       "expectedBody": {
-        "promo": "object"
+        "promo": {
+          "upc": "123456789012"
+        }
       },
       "bodyMatcher": "partial"
     }

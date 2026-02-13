@@ -1,0 +1,1 @@
+ALTER TABLE t_p13732906_kedoo_music_platform.releases ADD COLUMN IF NOT EXISTS release_date date NULL;

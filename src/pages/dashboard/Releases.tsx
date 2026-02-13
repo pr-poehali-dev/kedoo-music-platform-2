@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
@@ -22,7 +22,7 @@ export default function Releases() {
 
   const loadReleases = async () => {
     if (!user) return;
-    
+
     try {
       setIsLoading(true);
       const response = await releasesAPI.getAll(user.id);
@@ -39,16 +39,30 @@ export default function Releases() {
   };
 
   const handleDeleteRelease = async (releaseId: number) => {
-    if (!confirm('Удалить релиз?')) return;
-    
+    if (!confirm('Удалить релиз навсегда?')) return;
+
     try {
-      await releasesAPI.update(releaseId, { status: 'draft' });
+      await releasesAPI.delete(releaseId);
       toast({ title: 'Успешно', description: 'Релиз удалён' });
       loadReleases();
     } catch (error) {
       toast({
         title: 'Ошибка',
         description: 'Не удалось удалить релиз',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleWithdraw = async (releaseId: number) => {
+    try {
+      await releasesAPI.update(releaseId, { status: 'draft' });
+      toast({ title: 'Успешно', description: 'Релиз снят с модерации' });
+      loadReleases();
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось снять с модерации',
         variant: 'destructive',
       });
     }
@@ -61,7 +75,7 @@ export default function Releases() {
       accepted: { label: 'Принят', variant: 'outline' },
       rejected: { label: 'Отклонён', variant: 'destructive' },
     };
-    
+
     const config = variants[status] || variants.draft;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
@@ -83,14 +97,17 @@ export default function Releases() {
               <div>
                 <h3 className="font-semibold text-lg">{release.album_name}</h3>
                 <p className="text-sm text-muted-foreground">{release.artists}</p>
+                {release.release_date && (
+                  <p className="text-xs text-muted-foreground">Дата релиза: {new Date(release.release_date).toLocaleDateString('ru-RU')}</p>
+                )}
               </div>
               {getStatusBadge(release.status)}
             </div>
-            
+
             {release.rejection_reason && (
               <p className="text-sm text-destructive mb-2">Причина отклонения: {release.rejection_reason}</p>
             )}
-            
+
             <div className="flex flex-wrap gap-2 mt-4">
               <Link to={`/dashboard/releases/view/${release.id}`}>
                 <Button size="sm" variant="outline">
@@ -98,7 +115,7 @@ export default function Releases() {
                   Просмотр
                 </Button>
               </Link>
-              
+
               {(release.status === 'draft' || release.status === 'rejected') && (
                 <Link to={`/dashboard/releases/edit/${release.id}`}>
                   <Button size="sm" variant="outline">
@@ -107,14 +124,14 @@ export default function Releases() {
                   </Button>
                 </Link>
               )}
-              
+
               {release.status === 'on_moderation' && (
-                <Button size="sm" variant="outline" onClick={() => handleDeleteRelease(release.id)}>
+                <Button size="sm" variant="outline" onClick={() => handleWithdraw(release.id)}>
                   <Icon name="X" className="mr-2 h-4 w-4" />
                   Снять с модерации
                 </Button>
               )}
-              
+
               <Button size="sm" variant="ghost" onClick={() => handleDeleteRelease(release.id)}>
                 <Icon name="Trash2" className="h-4 w-4" />
               </Button>
@@ -126,7 +143,11 @@ export default function Releases() {
   );
 
   if (isLoading) {
-    return <div className="text-center py-20">Загрузка...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Icon name="Loader2" className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (
