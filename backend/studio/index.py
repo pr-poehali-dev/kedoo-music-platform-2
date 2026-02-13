@@ -27,7 +27,7 @@ def handler(event: dict, context) -> dict:
     cur = conn.cursor(cursor_factory=RealDictCursor)
     
     try:
-        params = event.get('queryStringParameters') or {}
+        params = event.get('queryStringParameters', {})
         entity_type = params.get('type')
         
         if method == 'GET':
@@ -97,34 +97,37 @@ def handler(event: dict, context) -> dict:
                 cur.execute(
                     """INSERT INTO t_p13732906_kedoo_music_platform.promo_releases 
                     (user_id, upc, release_description, key_track_isrc, key_track_name, 
-                     key_track_description, artists, smartlink_url, status) 
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) 
+                     key_track_description, artists, smartlink_url) 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s) 
                     RETURNING *""",
                     (user_id, body.get('upc'), body.get('release_description'), 
                      body.get('key_track_isrc'), body.get('key_track_name'),
-                     body.get('key_track_description'), body.get('artists'), body.get('smartlink_url'),
-                     body.get('status', 'on_moderation'))
+                     body.get('key_track_description'), body.get('artists'), body.get('smartlink_url'))
                 )
             
             elif entity_type == 'video':
                 cur.execute(
                     """INSERT INTO t_p13732906_kedoo_music_platform.videos 
-                    (user_id, video_url, name, artist, cover_url, status) 
-                    VALUES (%s, %s, %s, %s, %s, %s) 
+                    (user_id, video_url, video_name, artist_name, cover_url) 
+                    VALUES (%s, %s, %s, %s, %s) 
                     RETURNING *""",
-                    (user_id, body.get('video_url'), body.get('name'), 
-                     body.get('artist'), body.get('cover_url'), body.get('status', 'on_moderation'))
+                    (user_id, body.get('video_url'), body.get('video_name'), 
+                     body.get('artist_name'), body.get('cover_url'))
                 )
             
             elif entity_type == 'platform':
                 cur.execute(
                     """INSERT INTO t_p13732906_kedoo_music_platform.platform_accounts 
-                    (user_id, platform_name, artist_name, links, status) 
-                    VALUES (%s, %s, %s, %s, %s) 
+                    (user_id, platform, artist_description, latest_release_upc, 
+                     upcoming_release_upc, artist_photo_url, artist_video_url, links, 
+                     youtube_channel_url, youtube_artist_card_url) 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
                     RETURNING *""",
-                    (user_id, body.get('platform_name'), body.get('artist_name'),
-                     json.dumps(body.get('links', {})) if body.get('links') else None,
-                     body.get('status', 'on_moderation'))
+                    (user_id, body.get('platform'), body.get('artist_description'),
+                     body.get('latest_release_upc'), body.get('upcoming_release_upc'),
+                     body.get('artist_photo_url'), body.get('artist_video_url'),
+                     json.dumps(body.get('links', {})), body.get('youtube_channel_url'),
+                     body.get('youtube_artist_card_url'))
                 )
             else:
                 return {

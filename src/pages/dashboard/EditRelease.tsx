@@ -36,6 +36,16 @@ export default function EditRelease() {
       
       try {
         const data: Release = await releasesAPI.getById(parseInt(id));
+        
+        if (data.status !== 'draft') {
+          toast({
+            title: 'Ошибка',
+            description: 'Можно редактировать только черновики',
+            variant: 'destructive',
+          });
+          navigate('/dashboard/releases');
+          return;
+        }
 
         setAlbumData({
           album_name: data.album_name,

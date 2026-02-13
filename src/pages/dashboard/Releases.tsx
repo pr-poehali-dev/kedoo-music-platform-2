@@ -39,13 +39,10 @@ export default function Releases() {
   };
 
   const handleDeleteRelease = async (releaseId: number) => {
-    if (!confirm('Удалить релиз навсегда? Это действие нельзя отменить.')) return;
+    if (!confirm('Удалить релиз?')) return;
     
     try {
-      const response = await fetch(`${releasesAPI.baseUrl}?release_id=${releaseId}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Delete failed');
+      await releasesAPI.update(releaseId, { status: 'draft' });
       toast({ title: 'Успешно', description: 'Релиз удалён' });
       loadReleases();
     } catch (error) {
@@ -102,12 +99,14 @@ export default function Releases() {
                 </Button>
               </Link>
               
-              <Link to={`/dashboard/releases/edit/${release.id}`}>
-                <Button size="sm" variant="outline">
-                  <Icon name="Edit" className="mr-2 h-4 w-4" />
-                  Редактировать
-                </Button>
-              </Link>
+              {(release.status === 'draft' || release.status === 'rejected') && (
+                <Link to={`/dashboard/releases/edit/${release.id}`}>
+                  <Button size="sm" variant="outline">
+                    <Icon name="Edit" className="mr-2 h-4 w-4" />
+                    Редактировать
+                  </Button>
+                </Link>
+              )}
               
               {release.status === 'on_moderation' && (
                 <Button size="sm" variant="outline" onClick={() => handleDeleteRelease(release.id)}>
