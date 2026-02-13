@@ -28,9 +28,10 @@ def handler(event: dict, context) -> dict:
     
     try:
         if method == 'GET':
-            user_id = event.get('queryStringParameters', {}).get('user_id')
-            status = event.get('queryStringParameters', {}).get('status')
-            smartlink_id = event.get('queryStringParameters', {}).get('smartlink_id')
+            params_dict = event.get('queryStringParameters') or {}
+            user_id = params_dict.get('user_id')
+            status = params_dict.get('status')
+            smartlink_id = params_dict.get('smartlink_id')
             
             if smartlink_id:
                 cur.execute(
@@ -86,9 +87,9 @@ def handler(event: dict, context) -> dict:
             cur.execute(
                 """INSERT INTO t_p13732906_kedoo_music_platform.smartlinks 
                 (user_id, release_name, artists, cover_url, upc, status) 
-                VALUES (%s, %s, %s, %s, %s, 'draft') 
-                RETURNING id, user_id, release_name, artists, cover_url, upc, status, created_at, updated_at""",
-                (user_id, release_name, artists, cover_url, upc)
+                VALUES (%s, %s, %s, %s, %s, %s) 
+                RETURNING id, user_id, release_name, artists, cover_url, upc, status, smartlink_url, rejection_reason, created_at, updated_at""",
+                (user_id, release_name, artists, cover_url, upc, body.get('status', 'on_moderation'))
             )
             smartlink = dict(cur.fetchone())
             conn.commit()

@@ -214,6 +214,29 @@ def handler(event: dict, context) -> dict:
                     'isBase64Encoded': False
                 }
         
+        elif method == 'DELETE':
+            params = event.get('queryStringParameters') or {}
+            release_id = params.get('release_id')
+            
+            if not release_id:
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Missing release_id'}),
+                    'isBase64Encoded': False
+                }
+            
+            cur.execute("DELETE FROM t_p13732906_kedoo_music_platform.tracks WHERE release_id = %s", (release_id,))
+            cur.execute("DELETE FROM t_p13732906_kedoo_music_platform.releases WHERE id = %s", (release_id,))
+            conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'message': 'Release deleted'}),
+                'isBase64Encoded': False
+            }
+        
         return {
             'statusCode': 405,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
